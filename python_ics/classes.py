@@ -28,6 +28,10 @@ class Event:
 class CalendarSetup:
     timezone: str
 
+    def get_setup(self):
+        setup = str()
+        return setup
+
 
 @dataclass
 class Calendar:
@@ -35,4 +39,6 @@ class Calendar:
     setup: CalendarSetup
 
     def get_execution_string(self):
-        pass
+        execution_string = str()
+        execution_string += self.setup.get_setup()
+
