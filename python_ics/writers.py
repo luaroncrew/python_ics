@@ -3,9 +3,9 @@ import uuid
 from classes import Calendar
 
 
-def create_ics(calendar: Calendar, filename='') -> None:
+def create_ics(calendar: Calendar, filename=None) -> None:
     # giving random id to calendar if name is not mentioned
-    if filename == '':
+    if filename is None:
         filename = str(uuid.uuid4())
 
     ics_file = open(f'{filename}.ics', mode='w')
