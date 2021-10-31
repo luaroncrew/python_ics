@@ -3,6 +3,11 @@ import datetime as dt
 
 
 class Event:
+    """
+    Event class is the base of this library.
+    An ics calendar can contain multiple events so we can use
+    this class to create Calendars with multiple Events
+     """
     def __init__(
             self,
             title: str,
@@ -17,27 +22,31 @@ class Event:
         self.dt_end = self._is_valid_dt(dt_end)
         self.description = self._is_valid_description(description)
 
-        # TODO: check if dt_end is greater than dt_start
+        self.validate_time(dt_start, dt_end)
 
-    def _is_valid_location(self, location): # noqa
+    @staticmethod
+    def _is_valid_location(location):
         if location is not None:
             if not isinstance(location, str):
                 raise TypeError('location can be str or None type')
         return location
 
-    def _is_valid_dt(self, dt_param):  # noqa
+    @staticmethod
+    def _is_valid_dt(dt_param):  # noqa
         if not isinstance(dt_param, dt.datetime):
             raise TypeError('dt_start/end attributes can be datetime.datetime type only')
         return dt_param
 
-    def _is_valid_title(self, title):  # noqa
+    @staticmethod
+    def _is_valid_title(title):
         if not isinstance(title, str):
             raise TypeError('title can be str type only')
         if len(title) > 75:
             raise ValueError('title cannot be longer than 75 symbols')
         return title
 
-    def _is_valid_description(self, notes):  # noqa
+    @staticmethod
+    def _is_valid_description(notes):
         if notes is not None:
             if not isinstance(notes, str):
                 raise TypeError('notes must be str or None type')
@@ -45,16 +54,22 @@ class Event:
             raise ValueError('title cannot be longer than 75 symbols')
         return notes
 
+    @staticmethod
+    def validate_time(start, end):
+        if start > end:
+            raise ValueError('event cannot start later than it ends')
+
     def __str__(self):
         return f'{self.title}, {self.location}, {self.description}, {self.dt_end}, {self.dt_start}'
 
 
 class CalendarSetup:
-    # TODO: make interactive timezones properly
+    # TODO: make interactive timezones work properly
     def __init__(self, timezone_id: str):
         self.timezone_id = self._is_valid_tzid(timezone_id)
 
-    def _is_valid_tzid(self, timezone_id):
+    @staticmethod
+    def _is_valid_tzid(timezone_id):
         if not isinstance(timezone_id, str):
             raise TypeError('timezone_id must be str type')
         return timezone_id
@@ -69,13 +84,14 @@ class CalendarSetup:
 
 
 @dataclass
-class Calendar:
+class BaseCalendar:
     events: [Event]
-    setup: CalendarSetup
 
     def get_execution_string(self):
-        execution_string = str()
-        execution_string += self.setup.stringify()
+        # base calendar has no specific setup so it will be automatically generated once the
+        # ics file is executed
+        base_setup = open('base_setup.txt', mode='r').read()
+        execution_string = base_setup
 
         for event in self.events:
             # making ics compatible strings out of datetime objects
@@ -103,4 +119,11 @@ class Calendar:
 
             execution_string += event_string
 
+        execution_string += 'END:VCALENDAR'
         return execution_string
+
+
+class CalendarWithSetup(BaseCalendar):
+    def __init__(self, events, setup):
+        super().__init__(self, events)
+        self.setup = setup
