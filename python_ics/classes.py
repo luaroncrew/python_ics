@@ -38,7 +38,9 @@ class Event:
     @staticmethod
     def _is_valid_dt(dt_param):  # noqa
         if not isinstance(dt_param, dt.datetime):
-            raise TypeError('dt_start/end attributes can be datetime.datetime type only')
+            raise TypeError(
+                'dt_start/end attributes can be datetime.datetime type only'
+            )
         return dt_param
 
     @staticmethod
@@ -68,7 +70,10 @@ class Event:
             raise ValueError('event cannot start later than it ends')
 
     def __str__(self):
-        return f'{self.title}, {self.location}, {self.description}, {self.dt_end}, {self.dt_start}'
+        return (
+            f'{self.title}, {self.location}, {self.description}, '
+            f'{self.dt_end}, {self.dt_start}'
+        )
 
 
 class CalendarSetup:
@@ -83,7 +88,10 @@ class CalendarSetup:
         return timezone_id
 
     def stringify(self):
-        setup_file = open(Path(__file__).with_name('vcalendar_setup.ics'), mode='r')
+        setup_file = open(
+            Path(__file__).with_name('vcalendar_setup.ics'),
+            mode='r',
+        )
         setup_string = setup_file.read() + '\n'
         # FIXME: this formatting does not work
         setup_string.format(self.timezone_id)
@@ -134,9 +142,11 @@ class BaseCalendar:
         return '\r\n'.join(folded_lines)
 
     def get_execution_string(self):
-        # base calendar has no specific setup so it will be automatically generated once the
-        # ics file is executed
-        base_setup = Path(__file__).with_name('base_setup.txt').read_text(encoding='utf-8')
+        # base calendar has no specific setup so it will be automatically
+        # generated once the ics file is executed
+        base_setup = Path(__file__).with_name('base_setup.txt').read_text(
+            encoding='utf-8'
+        )
         execution_lines = [line.rstrip('\r') for line in base_setup.splitlines()]
         dtstamp = self._format_utc(dt.datetime.now(dt.timezone.utc))
 
@@ -151,13 +161,19 @@ class BaseCalendar:
             ]
 
             if event.location is not None:
-                event_lines.append(f'LOCATION:{self._escape_text(event.location)}')
+                event_lines.append(
+                    f'LOCATION:{self._escape_text(event.location)}'
+                )
 
             if event.description is not None:
-                event_lines.append(f'DESCRIPTION:{self._escape_text(event.description)}')
+                event_lines.append(
+                    f'DESCRIPTION:{self._escape_text(event.description)}'
+                )
 
             event_lines.append('END:VEVENT')
-            execution_lines.extend(self._fold_content_line(line) for line in event_lines)
+            execution_lines.extend(
+                self._fold_content_line(line) for line in event_lines
+            )
 
         execution_lines.append('END:VCALENDAR')
         return '\r\n'.join(execution_lines) + '\r\n'
