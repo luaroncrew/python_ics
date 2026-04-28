@@ -1,5 +1,7 @@
-from dataclasses import dataclass
 import datetime as dt
+import uuid
+from dataclasses import dataclass
+from pathlib import Path
 
 
 class Event:
@@ -14,13 +16,15 @@ class Event:
             dt_start: dt.datetime,
             dt_end: dt.datetime,
             location=None,
-            description=None):
+            description=None,
+            uid=None):
 
         self.title = self._is_valid_title(title)
         self.location = self._is_valid_location(location)
         self.dt_start = self._is_valid_dt(dt_start)
         self.dt_end = self._is_valid_dt(dt_end)
         self.description = self._is_valid_description(description)
+        self.uid = self._is_valid_uid(uid)
 
         self.validate_time(dt_start, dt_end)
 
@@ -34,15 +38,15 @@ class Event:
     @staticmethod
     def _is_valid_dt(dt_param):  # noqa
         if not isinstance(dt_param, dt.datetime):
-            raise TypeError('dt_start/end attributes can be datetime.datetime type only')
+            raise TypeError(
+                'dt_start/end attributes can be datetime.datetime type only'
+            )
         return dt_param
 
     @staticmethod
     def _is_valid_title(title):
         if not isinstance(title, str):
             raise TypeError('title can be str type only')
-        if len(title) > 75:
-            raise ValueError('title cannot be longer than 75 symbols')
         return title
 
     @staticmethod
@@ -50,9 +54,15 @@ class Event:
         if notes is not None:
             if not isinstance(notes, str):
                 raise TypeError('notes must be str or None type')
-        if len(notes) > 75:
-            raise ValueError('title cannot be longer than 75 symbols')
         return notes
+
+    @staticmethod
+    def _is_valid_uid(uid):
+        if uid is None:
+            return str(uuid.uuid4())
+        if not isinstance(uid, str):
+            raise TypeError('uid must be str or None type')
+        return uid
 
     @staticmethod
     def validate_time(start, end):
@@ -60,7 +70,10 @@ class Event:
             raise ValueError('event cannot start later than it ends')
 
     def __str__(self):
-        return f'{self.title}, {self.location}, {self.description}, {self.dt_end}, {self.dt_start}'
+        return (
+            f'{self.title}, {self.location}, {self.description}, '
+            f'{self.dt_end}, {self.dt_start}'
+        )
 
 
 class CalendarSetup:
@@ -75,7 +88,10 @@ class CalendarSetup:
         return timezone_id
 
     def stringify(self):
-        setup_file = open('vcalendar_setup.ics', mode='r')
+        setup_file = open(
+            Path(__file__).with_name('vcalendar_setup.ics'),
+            mode='r',
+        )
         setup_string = setup_file.read() + '\n'
         # FIXME: this formatting does not work
         setup_string.format(self.timezone_id)
@@ -87,40 +103,82 @@ class CalendarSetup:
 class BaseCalendar:
     events: [Event]
 
+    @staticmethod
+    def _format_utc(dt_param):
+        return dt_param.astimezone(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+
+    @staticmethod
+    def _format_datetime_property(name, dt_param):
+        if dt_param.tzinfo is None or dt_param.utcoffset() is None:
+            return f'{name}:{dt_param.strftime("%Y%m%dT%H%M%S")}'
+        return f'{name}:{BaseCalendar._format_utc(dt_param)}'
+
+    @staticmethod
+    def _escape_text(value):
+        escaped_value = value.replace('\\', '\\\\')
+        escaped_value = escaped_value.replace('\r\n', '\n').replace('\r', '\n')
+        escaped_value = escaped_value.replace('\n', '\\n')
+        escaped_value = escaped_value.replace(';', '\\;').replace(',', '\\,')
+        return escaped_value
+
+    @staticmethod
+    def _fold_content_line(line, limit=75):
+        folded_lines = []
+        current = ''
+        current_length = 0
+
+        for char in line:
+            char_length = len(char.encode('utf-8'))
+            if current and current_length + char_length > limit:
+                folded_lines.append(current)
+                current = f' {char}'
+                current_length = 1 + char_length
+                continue
+
+            current += char
+            current_length += char_length
+
+        folded_lines.append(current)
+        return '\r\n'.join(folded_lines)
+
     def get_execution_string(self):
-        # base calendar has no specific setup so it will be automatically generated once the
-        # ics file is executed
-        base_setup = open('base_setup.txt', mode='r').read()
-        execution_string = base_setup
+        # base calendar has no specific setup so it will be automatically
+        # generated once the ics file is executed
+        base_setup = Path(__file__).with_name('base_setup.txt').read_text(
+            encoding='utf-8'
+        )
+        execution_lines = [
+            line.rstrip('\r') for line in base_setup.splitlines()
+        ]
+        dtstamp = self._format_utc(dt.datetime.now(dt.timezone.utc))
 
         for event in self.events:
-            # making ics compatible strings out of datetime objects
-            st_date = event.dt_start.strftime('%Y%m%d')
-            st_time = 'T' + event.dt_start.strftime('%H%M%S')
-            st_datetime = st_date + st_time
-
-            end_date = event.dt_end.strftime('%Y%m%d')
-            end_time = 'T' + event.dt_end.strftime('%H%M%S')
-            end_datetime = end_date + end_time
-
-            # writing event block
-            event_string = 'BEGIN:VEVENT\n'
-            event_string += 'DTSTAMP:20210904T194914Z\n'  # here we have to add a custom date
-            event_string += f'DTSTART;TZID=Europe/Paris:{st_datetime}\n'
-            event_string += f'DTEND;TZID=Europe/Paris:{end_datetime}\n'
-            event_string += f'SUMMARY:{event.title}\n'
+            event_lines = [
+                'BEGIN:VEVENT',
+                f'UID:{event.uid}',
+                f'DTSTAMP:{dtstamp}',
+                self._format_datetime_property('DTSTART', event.dt_start),
+                self._format_datetime_property('DTEND', event.dt_end),
+                f'SUMMARY:{self._escape_text(event.title)}',
+            ]
 
             if event.location is not None:
-                event_string += f'LOCATION:{event.location}\n'
+                event_lines.append(
+                    f'LOCATION:{self._escape_text(event.location)}'
+                )
 
             if event.description is not None:
-                event_string += f'DESCRIPTION:{event.description}\n'
-            event_string += 'END:VEVENT\n'
+                event_lines.append(
+                    f'DESCRIPTION:{self._escape_text(event.description)}'
+                )
 
-            execution_string += event_string
+            event_lines.append('END:VEVENT')
+            execution_lines.extend(
+                self._fold_content_line(line) for line in event_lines
+            )
 
-        execution_string += 'END:VCALENDAR'
-        return execution_string
+        execution_lines.append('END:VCALENDAR')
+        return '\r\n'.join(execution_lines) + '\r\n'
 
 
 class CalendarWithSetup(BaseCalendar):

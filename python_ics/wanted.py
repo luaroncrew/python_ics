@@ -1,3 +1,5 @@
-calendar = Calendar(dt_start, dt_end, title='laskdjfas')
+"""Scratchpad for future calendar API examples.
 
-calendar.export(destination='sdfasfd', filename='sadfasdfsadf')
+Previously this file contained executable placeholder code using undefined
+names, which breaks flake8's F821 check in CI.
+"""

@@ -8,7 +8,6 @@ def create_ics(calendar: BaseCalendar, filename=None) -> None:
     if filename is None:
         filename = str(uuid.uuid4())
 
-    ics_file = open(f'{filename}.ics', mode='w')
+    ics_file = open(f'{filename}.ics', mode='w', encoding='utf-8', newline='')
     ics_file.write(calendar.get_execution_string())
     ics_file.close()
-
