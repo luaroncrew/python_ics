@@ -48,6 +48,12 @@ calendar = BaseCalendar(events=[meeting, reading_club])
 calendar.export(destination='calendars/important', filename='very_important_agenda')
 ```
 
+## Event serialization notes
+
+Generated `.ics` output should include a per-event `UID` when one is not supplied, emit a fresh UTC `DTSTAMP` at serialization time, and preserve timezone-aware datetimes instead of forcing `Europe/Paris`.
+
+Text values such as `SUMMARY`, `LOCATION`, and `DESCRIPTION` are expected to be escaped according to RFC 5545, and long content lines should be folded onto continuation lines so the result imports cleanly across common calendar clients.
+
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
