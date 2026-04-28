@@ -147,7 +147,9 @@ class BaseCalendar:
         base_setup = Path(__file__).with_name('base_setup.txt').read_text(
             encoding='utf-8'
         )
-        execution_lines = [line.rstrip('\r') for line in base_setup.splitlines()]
+        execution_lines = [
+            line.rstrip('\r') for line in base_setup.splitlines()
+        ]
         dtstamp = self._format_utc(dt.datetime.now(dt.timezone.utc))
 
         for event in self.events:
