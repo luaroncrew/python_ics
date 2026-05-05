@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 import datetime as dt
+from pathlib import Path
+
+
+PACKAGE_DIR = Path(__file__).resolve().parent
 
 
 class Event:
@@ -50,8 +54,8 @@ class Event:
         if notes is not None:
             if not isinstance(notes, str):
                 raise TypeError('notes must be str or None type')
-        if len(notes) > 75:
-            raise ValueError('title cannot be longer than 75 symbols')
+            if len(notes) > 75:
+                raise ValueError('title cannot be longer than 75 symbols')
         return notes
 
     @staticmethod
@@ -75,10 +79,8 @@ class CalendarSetup:
         return timezone_id
 
     def stringify(self):
-        setup_file = open('vcalendar_setup.ics', mode='r')
-        setup_string = setup_file.read() + '\n'
-        # FIXME: this formatting does not work
-        setup_string.format(self.timezone_id)
+        setup_file = open(PACKAGE_DIR / 'vcalendar_setup.ics', mode='r')
+        setup_string = setup_file.read().format(self.timezone_id) + '\n'
         setup_file.close()
         return setup_string
 
@@ -90,7 +92,7 @@ class BaseCalendar:
     def get_execution_string(self):
         # base calendar has no specific setup so it will be automatically generated once the
         # ics file is executed
-        base_setup = open('base_setup.txt', mode='r').read()
+        base_setup = open(PACKAGE_DIR / 'base_setup.txt', mode='r').read()
         execution_string = base_setup
 
         for event in self.events:
