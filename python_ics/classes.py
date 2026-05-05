@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 import datetime as dt
+from pathlib import Path
+
+
+PACKAGE_DIR = Path(__file__).resolve().parent
 
 
 class Event:
@@ -75,7 +79,7 @@ class CalendarSetup:
         return timezone_id
 
     def stringify(self):
-        setup_file = open('vcalendar_setup.ics', mode='r')
+        setup_file = open(PACKAGE_DIR / 'vcalendar_setup.ics', mode='r')
         setup_string = setup_file.read() + '\n'
         # FIXME: this formatting does not work
         setup_string.format(self.timezone_id)
@@ -90,7 +94,7 @@ class BaseCalendar:
     def get_execution_string(self):
         # base calendar has no specific setup so it will be automatically generated once the
         # ics file is executed
-        base_setup = open('base_setup.txt', mode='r').read()
+        base_setup = open(PACKAGE_DIR / 'base_setup.txt', mode='r').read()
         execution_string = base_setup
 
         for event in self.events:
