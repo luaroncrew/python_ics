@@ -80,9 +80,7 @@ class CalendarSetup:
 
     def stringify(self):
         setup_file = open(PACKAGE_DIR / 'vcalendar_setup.ics', mode='r')
-        setup_string = setup_file.read() + '\n'
-        # FIXME: this formatting does not work
-        setup_string.format(self.timezone_id)
+        setup_string = setup_file.read().format(self.timezone_id) + '\n'
         setup_file.close()
         return setup_string
 
