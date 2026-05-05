@@ -54,8 +54,8 @@ class Event:
         if notes is not None:
             if not isinstance(notes, str):
                 raise TypeError('notes must be str or None type')
-        if len(notes) > 75:
-            raise ValueError('title cannot be longer than 75 symbols')
+            if len(notes) > 75:
+                raise ValueError('title cannot be longer than 75 symbols')
         return notes
 
     @staticmethod
